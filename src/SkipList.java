@@ -135,7 +135,7 @@ public class SkipList<T extends Comparable<T>> {
     }
 
     // ==================================
-    // Utiliza los niveles superiores para insertar.
+    // Utiliza las vías rápidas para insertar.
     // ==================================
     private Triple<Nodo, Integer, Integer> insertarRapido(Nodo nodo, T dato) {
 
@@ -233,6 +233,9 @@ public class SkipList<T extends Comparable<T>> {
 
     }
 
+    // ==================================
+    // Busca un nodo usando el último nivel
+    // ==================================
     private Nodo buscar(Nodo nodoAct, T dato) {
         if (nodoAct.sig == null) {
             return null;
@@ -244,6 +247,9 @@ public class SkipList<T extends Comparable<T>> {
         else return null;
     }
 
+    // ==================================
+    // Busca un nodo usando las vías rápidas
+    // ==================================
     private Nodo buscarRapido(Nodo nodoAct, T dato) {
         if (nodoAct.dato.equals(dato)) return nodoAct;
         for (int i = nodoAct.punteros.size() - 1; i >= 0; i--) {
@@ -284,6 +290,9 @@ public class SkipList<T extends Comparable<T>> {
         return buscar(sig, dato) != null;
     }
 
+    // ==================================
+    // Utiliza las vías rápidas para eliminar.
+    // ==================================
     private void eliminarRapido(Nodo nodo, T dato) {
         if (nodo == null) return;
 
@@ -306,6 +315,9 @@ public class SkipList<T extends Comparable<T>> {
         }
     }
 
+    // ==================================
+    // Utiliza el último nivel para eliminar.
+    // ==================================
     private void eliminar(Nodo nodo, T dato) {
         if (nodo == null || nodo.sig == null) return;
 
@@ -349,6 +361,9 @@ public class SkipList<T extends Comparable<T>> {
         }
     }
 
+    // ==================================
+    // Método que genera un String representando la cabeza.
+    // ==================================
     private String obtCabeza() {
         String dato = sig == null? "null": sig.dato.toString();
         String res = "REF\n< " + dato + " >";
@@ -360,6 +375,9 @@ public class SkipList<T extends Comparable<T>> {
         return res;
     }
 
+    // ==================================
+    // Método que recursivamente genera un String representando la lista.
+    // ==================================
     private String obtHijos(String acc, Nodo nodo) {
         if (nodo == null) return acc;
         String sup = "< " + nodo.dato + " >";
