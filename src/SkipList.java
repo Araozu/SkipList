@@ -464,6 +464,26 @@ public class SkipList<T extends Comparable<T>> {
         return obtHijos(acc + "\n" + sup + "\n" + inf + "\n", nodo.sig);
     }
 
+    /**
+     * Returns a simple string representation of the skip list showing only the values.
+     * @return A simple string representation
+     */
+    public String toSimpleString() {
+        if (next == null) return "[]";
+        
+        StringBuilder sb = new StringBuilder("[");
+        Nodo current = next;
+        while (current != null) {
+            sb.append(current.dato);
+            if (current.sig != null) {
+                sb.append(", ");
+            }
+            current = current.sig;
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
     @Override
     public String toString() {
         return obtCabeza() + "\n|" + obtHijos("", next);
