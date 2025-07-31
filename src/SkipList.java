@@ -23,7 +23,7 @@ public class SkipList<T extends Comparable<T>> {
     // ==================================
     // Clase que contiene 2 valores genéricos
     // ==================================
-    private class Pair<D, E> {
+    private static class Pair<D, E> {
         final D first;
         final E second;
         Pair(D first, E second) {
@@ -35,7 +35,7 @@ public class SkipList<T extends Comparable<T>> {
     // ==================================
     // Clase que contiene 3 valores genéricos
     // ==================================
-    private class Triple<D, E, F> {
+    private static class Triple<D, E, F> {
         final D first;
         final E second;
         final F third;
@@ -76,12 +76,17 @@ public class SkipList<T extends Comparable<T>> {
     private final ArrayList<Pair<Boolean, Nodo>> head;
     private Nodo next = null;
     private final int PROBABILITY = 50; // Kept for backward compatibility
+    private int size = 0; // Track number of elements
 
     /**
      * Constructor del SkipList.
      * @param altura La altura máxima de la estructura (número de niveles)
+     * @throws IllegalArgumentException si la altura es menor que 2
      */
     public SkipList(int altura) {
+        if (altura < 2) {
+            throw new IllegalArgumentException("Height must be at least 2, got: " + altura);
+        }
         this.height = altura;
         ArrayList<Pair<Boolean, Nodo>> head = new ArrayList<>(altura - 1);
         for (int i = 0; i < altura - 2; i++) {
@@ -96,6 +101,14 @@ public class SkipList<T extends Comparable<T>> {
      * */
     public boolean estaVacia() {
         return next == null;
+    }
+
+    /**
+     * Returns the number of elements in the skip list.
+     * @return the size of the skip list
+     */
+    public int size() {
+        return size;
     }
 
 
@@ -196,8 +209,12 @@ public class SkipList<T extends Comparable<T>> {
      * Inserta un elemento en el skip list, y genera sus niveles automáticamente.
      * Complejidad temporal: O(log n) promedio
      * @param dato El elemento a insertar
+     * @throws IllegalArgumentException si dato es null
      */
     public void insertar(T dato) {
+        if (dato == null) {
+            throw new IllegalArgumentException("Cannot insert null value");
+        }
         for (int i = head.size() - 1; i >= 0; i--) {
             Pair<Boolean, Nodo> par = head.get(i);
             Nodo nodo = par.second;
@@ -215,6 +232,7 @@ public class SkipList<T extends Comparable<T>> {
                     incrementarNivel(head, nuevoNodo, nivelActual);
                     nivelActual++;
                 }
+                size++;
                 return;
             }
         }
@@ -242,6 +260,9 @@ public class SkipList<T extends Comparable<T>> {
                 incrementarNivel(head, nuevoNodo, i);
             }
         }
+        
+        // Increment size after successful insertion
+        size++;
 
     }
 
@@ -249,12 +270,12 @@ public class SkipList<T extends Comparable<T>> {
     // Busca un nodo usando el último nivel
     // ==================================
     private Nodo buscar(Nodo nodoAct, T dato) {
-        if (nodoAct.sig == null) {
+        if (nodoAct == null || nodoAct.sig == null) {
             return null;
         }
 
         int resComparacion = dato.compareTo(nodoAct.sig.dato);
-        if (resComparacion < 0) return buscar(nodoAct.sig, dato);
+        if (resComparacion > 0) return buscar(nodoAct.sig, dato);  // Fixed comparison direction
         else if (resComparacion == 0) return nodoAct.sig;
         else return null;
     }
@@ -285,8 +306,12 @@ public class SkipList<T extends Comparable<T>> {
      * Complejidad temporal: O(log n) promedio
      * @param dato El elemento a buscar en la lista
      * @return Un boolean indicando si el elemento existe en la lista.
+     * @throws IllegalArgumentException si dato es null
      * */
     public boolean contiene(T dato) {
+        if (dato == null) {
+            throw new IllegalArgumentException("Cannot search for null value");
+        }
         for (int i = head.size() - 1; i >= 0; i--) {
             Pair<Boolean, Nodo> par = head.get(i);
             Nodo nodo = par.second;
@@ -307,8 +332,12 @@ public class SkipList<T extends Comparable<T>> {
      * Elimina un elemento de la lista silenciosamente.
      * Complejidad temporal: O(log n) promedio - MEJORADO
      * @param dato El elemento a eliminar
+     * @throws IllegalArgumentException si dato es null
      * */
     public void eliminar(T dato) {
+        if (dato == null) {
+            throw new IllegalArgumentException("Cannot delete null value");
+        }
         if (next == null) return;
         
         // Array to store the predecessors at each level that need updating
@@ -386,6 +415,9 @@ public class SkipList<T extends Comparable<T>> {
             // Update predecessor's sig pointer
             update.get(0).sig = nodeToDelete.sig;
         }
+        
+        // Decrement size after successful deletion
+        size--;
     }
 
     // ==================================
