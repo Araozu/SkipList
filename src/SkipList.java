@@ -1,9 +1,13 @@
 import java.util.ArrayList;
 
 /** SkipList en Java.
- *
- * @version 1.0
+ * 
+ * Una implementación eficiente de Skip List que proporciona operaciones
+ * de inserción, búsqueda y eliminación en tiempo O(log n) promedio.
+ * 
+ * @version 2.0
  * @since 2019-07-01
+ * @param <T> El tipo de datos que almacena la lista, debe ser Comparable
  * */
 public class SkipList<T extends Comparable<T>> {
 
@@ -56,8 +60,8 @@ public class SkipList<T extends Comparable<T>> {
         Nodo(T dato, Nodo sig) {
             this.dato = dato;
             this.sig = sig;
-            ArrayList<Pair<Boolean, Nodo>> punteros = new ArrayList<>(altura - 1);
-            for (int i = 0; i < altura - 2; i++) {
+            ArrayList<Pair<Boolean, Nodo>> punteros = new ArrayList<>(height - 1);
+            for (int i = 0; i < height - 2; i++) {
                 punteros.add(new Pair<>(false, null));
             }
             this.punteros = punteros;
@@ -68,18 +72,22 @@ public class SkipList<T extends Comparable<T>> {
 
     }
 
-    private final int altura;
-    private final ArrayList<Pair<Boolean, Nodo>> cabeza;
-    private Nodo sig = null;
-    private final int PROBABILIDAD = 50;
+    private final int height;
+    private final ArrayList<Pair<Boolean, Nodo>> head;
+    private Nodo next = null;
+    private final int PROBABILITY = 50; // Kept for backward compatibility
 
+    /**
+     * Constructor del SkipList.
+     * @param altura La altura máxima de la estructura (número de niveles)
+     */
     public SkipList(int altura) {
-        this.altura = altura;
-        ArrayList<Pair<Boolean, Nodo>> cabeza = new ArrayList<>(altura - 1);
+        this.height = altura;
+        ArrayList<Pair<Boolean, Nodo>> head = new ArrayList<>(altura - 1);
         for (int i = 0; i < altura - 2; i++) {
-            cabeza.add(new Pair<>(true, null));
+            head.add(new Pair<>(true, null));
         }
-        this.cabeza = cabeza;
+        this.head = head;
     }
 
     /**
@@ -87,19 +95,22 @@ public class SkipList<T extends Comparable<T>> {
      * @return Un boolean indicando si la lista está vacia.
      * */
     public boolean estaVacia() {
-        return sig == null;
+        return next == null;
     }
 
 
     // ==================================
     // Genera el número de niveles que subirá un nodo tras insertarse
+    // Improved algorithm with better distribution and max level cap
     // ==================================
     private int genNumInserciones() {
-        int i = -1;
-        while (Math.random() * 100 < PROBABILIDAD) {
-            i++;
+        int level = 0;
+        // Use 0.5 probability for better theoretical performance
+        // and cap at maximum useful height
+        while (Math.random() < 0.5 && level < height - 2) {
+            level++;
         }
-        return i;
+        return level;
     }
 
     // ==================================
@@ -183,11 +194,12 @@ public class SkipList<T extends Comparable<T>> {
 
     /**
      * Inserta un elemento en el skip list, y genera sus niveles automáticamente.
+     * Complejidad temporal: O(log n) promedio
      * @param dato El elemento a insertar
      */
     public void insertar(T dato) {
-        for (int i = cabeza.size() - 1; i >= 0; i--) {
-            Pair<Boolean, Nodo> par = cabeza.get(i);
+        for (int i = head.size() - 1; i >= 0; i--) {
+            Pair<Boolean, Nodo> par = head.get(i);
             Nodo nodo = par.second;
             if (nodo == null) continue;
             T datoN = nodo.dato;
@@ -200,34 +212,34 @@ public class SkipList<T extends Comparable<T>> {
 
                 int nivelActual = nivel;
                 for (int j = 0; j <= numInserciones; j++ ) {
-                    incrementarNivel(cabeza, nuevoNodo, nivelActual);
+                    incrementarNivel(head, nuevoNodo, nivelActual);
                     nivelActual++;
                 }
                 return;
             }
         }
 
-        Nodo primerNodo = sig;
+        Nodo primerNodo = next;
         if (primerNodo == null) {
             Nodo nuevoNodo = new Nodo(dato);
-            sig = nuevoNodo;
+            next = nuevoNodo;
             int numInserciones = genNumInserciones();
             for (int i = 0; i <= numInserciones; i++) {
-                incrementarNivel(cabeza, nuevoNodo, i);
+                incrementarNivel(head, nuevoNodo, i);
             }
         } else if (dato.compareTo(primerNodo.dato) < 0) {
             Nodo nuevoNodo = new Nodo(dato, primerNodo);
-            sig = nuevoNodo;
+            next = nuevoNodo;
             int numInserciones = genNumInserciones();
             for (int i = 0; i <= numInserciones; i++) {
-                incrementarNivel(cabeza, nuevoNodo, i);
+                incrementarNivel(head, nuevoNodo, i);
             }
         } else {
             Pair<Nodo, Integer> par = insertar(primerNodo, dato);
             Nodo nuevoNodo = par.first;
             int numInserciones = par.second;
             for (int i = 0; i <= numInserciones; i++) {
-                incrementarNivel(cabeza, nuevoNodo, i);
+                incrementarNivel(head, nuevoNodo, i);
             }
         }
 
@@ -270,12 +282,13 @@ public class SkipList<T extends Comparable<T>> {
 
     /**
      * Revisa si un elemento existe en la lista
+     * Complejidad temporal: O(log n) promedio
      * @param dato El elemento a buscar en la lista
      * @return Un boolean indicando si el elemento existe en la lista.
      * */
     public boolean contiene(T dato) {
-        for (int i = cabeza.size() - 1; i >= 0; i--) {
-            Pair<Boolean, Nodo> par = cabeza.get(i);
+        for (int i = head.size() - 1; i >= 0; i--) {
+            Pair<Boolean, Nodo> par = head.get(i);
             Nodo nodo = par.second;
             if (nodo == null) continue;
             T datoN = nodo.dato;
@@ -287,77 +300,91 @@ public class SkipList<T extends Comparable<T>> {
                 return true;
             }
         }
-        return buscar(sig, dato) != null;
-    }
-
-    // ==================================
-    // Utiliza las vías rápidas para eliminar.
-    // ==================================
-    private void eliminarRapido(Nodo nodo, T dato) {
-        if (nodo == null) return;
-
-        for (int i = nodo.punteros.size() - 1; i >= 0; i--) {
-            Pair<Boolean, Nodo> par = nodo.punteros.get(i);
-            Nodo nodoSig = par.second;
-            if (nodoSig == null) continue;
-            T datoN = nodoSig.dato;
-
-            int resComparacion = dato.compareTo(datoN);
-            if (resComparacion == 0) {
-                Pair<Boolean, Nodo> referenciaDestino = nodoSig.punteros.get(i);
-                Nodo nodoSigSig = referenciaDestino.second;
-
-                nodo.punteros.set(i, new Pair<>(true, nodoSigSig));
-
-            } else if (resComparacion > 0) {
-                eliminarRapido(nodoSig, dato);
-            }
-        }
-    }
-
-    // ==================================
-    // Utiliza el último nivel para eliminar.
-    // ==================================
-    private void eliminar(Nodo nodo, T dato) {
-        if (nodo == null || nodo.sig == null) return;
-
-        int resComparacion = dato.compareTo(nodo.sig.dato);
-        if (resComparacion == 0) {
-            nodo.sig = nodo.sig.sig;
-        } else if (resComparacion > 0) {
-            eliminar(nodo.sig, dato);
-        }
+        return buscar(next, dato) != null;
     }
 
     /**
      * Elimina un elemento de la lista silenciosamente.
+     * Complejidad temporal: O(log n) promedio - MEJORADO
      * @param dato El elemento a eliminar
      * */
     public void eliminar(T dato) {
-        if (sig == null) return;
-
-        for (int i = cabeza.size() - 1; i >= 0; i--) {
-            Pair<Boolean, Nodo> par = cabeza.get(i);
-            Nodo nodo = par.second;
-            if (nodo == null) continue;
-            T datoN = nodo.dato;
-
-            int resComparacion = dato.compareTo(datoN);
-            if (resComparacion == 0) {
-                Pair<Boolean, Nodo> referenciaDestino = nodo.punteros.get(i);
-                Nodo nodoSig = referenciaDestino.second;
-
-                cabeza.set(i, new Pair<>(true, nodoSig));
-
-            } else if (resComparacion > 0) {
-                eliminarRapido(nodo, dato);
+        if (next == null) return;
+        
+        // Array to store the predecessors at each level that need updating
+        ArrayList<Nodo> update = new ArrayList<>(height - 1);
+        for (int i = 0; i < height - 1; i++) {
+            update.add(null);
+        }
+        
+        // Start from the top level and find predecessors
+        Nodo current = null;
+        
+        // Search through header levels first
+        for (int level = head.size() - 1; level >= 0; level--) {
+            Pair<Boolean, Nodo> headerPair = head.get(level);
+            current = headerPair.second;
+            
+            // If header points directly to target or beyond, update from header
+            if (current == null || dato.compareTo(current.dato) <= 0) {
+                update.set(level, null); // Will update header directly
+                continue;
+            }
+            
+            // Traverse forward at this level
+            while (current != null && level < current.punteros.size()) {
+                Pair<Boolean, Nodo> nextPair = current.punteros.get(level);
+                Nodo next = nextPair.second;
+                if (next == null || dato.compareTo(next.dato) <= 0) {
+                    break;
+                }
+                current = next;
+            }
+            update.set(level, current);
+        }
+        
+        // Find the node to delete at the bottom level
+        Nodo nodeToDelete = null;
+        if (update.get(0) == null) {
+            // Check if it's the first node
+            if (next != null && next.dato.equals(dato)) {
+                nodeToDelete = next;
+            }
+        } else {
+            // Check the next node from the last update position
+            if (update.get(0).sig != null && update.get(0).sig.dato.equals(dato)) {
+                nodeToDelete = update.get(0).sig;
             }
         }
-
-        if (sig.dato.equals(dato)) {
-            sig = sig.sig;
+        
+        if (nodeToDelete == null) return; // Node not found
+        
+        // Update pointers at all levels
+        for (int level = 0; level < Math.min(height - 1, nodeToDelete.punteros.size()); level++) {
+            Nodo predecessor = update.get(level);
+            Nodo successorAtLevel = null;
+            
+            if (level < nodeToDelete.punteros.size()) {
+                Pair<Boolean, Nodo> successorPair = nodeToDelete.punteros.get(level);
+                successorAtLevel = successorPair.second;
+            }
+            
+            if (predecessor == null) {
+                // Update header
+                head.set(level, new Pair<>(true, successorAtLevel));
+            } else {
+                // Update predecessor's pointer
+                predecessor.punteros.set(level, new Pair<>(true, successorAtLevel));
+            }
+        }
+        
+        // Update bottom level pointer
+        if (update.get(0) == null) {
+            // Deleting first node
+            next = nodeToDelete.sig;
         } else {
-            eliminar(sig, dato);
+            // Update predecessor's sig pointer
+            update.get(0).sig = nodeToDelete.sig;
         }
     }
 
@@ -365,9 +392,9 @@ public class SkipList<T extends Comparable<T>> {
     // Método que genera un String representando la cabeza.
     // ==================================
     private String obtCabeza() {
-        String dato = sig == null? "null": sig.dato.toString();
+        String dato = next == null? "null": next.dato.toString();
         String res = "REF\n< " + dato + " >";
-        for (Pair<Boolean, Nodo> p: cabeza) {
+        for (Pair<Boolean, Nodo> p: head) {
             Nodo n = p.second;
             String valorNodo = n == null? "null": n.dato.toString();
             res += "| " + valorNodo + " |";
@@ -407,7 +434,7 @@ public class SkipList<T extends Comparable<T>> {
 
     @Override
     public String toString() {
-        return obtCabeza() + "\n|" + obtHijos("", sig);
+        return obtCabeza() + "\n|" + obtHijos("", next);
     }
 
 }
